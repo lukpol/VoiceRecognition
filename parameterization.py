@@ -1,7 +1,5 @@
 import math
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.io import wavfile
 
 mfcc_len = 0
 mfcc_filterBank = 0
@@ -52,6 +50,12 @@ def dft(x: list) -> list:
     return out
 
 
+def fft(x: list) -> list:
+    fft_tmp = np.absolute(np.fft.rfft(x))  # Magnitude of the FFT
+    out = ((1.0 / len(x)) * (fft_tmp ** 2))
+    return out
+
+
 def dct(x: list) -> list:
     signal_len = len(x)
     out = np.zeros(signal_len)
@@ -64,7 +68,11 @@ def dct(x: list) -> list:
 
 
 def energy(x: list):
-    out = 10 * np.log10(sum([pow(el, 2) for el in x])) / len(x)
+    sum_tmp = sum([pow(el, 2) for el in x])
+    if sum_tmp > 0:
+        out = 20 * np.log10(sum_tmp) / len(x)
+    else:
+        out = -120 / len(x)
     return out
 
 
@@ -73,7 +81,12 @@ def mfcc_filtering(x: list, nfilt: int) -> list:
 
     mfc = np.zeros(nfilt)
     for n in range(nfilt):
-        mfc[n] = 20 * np.log10(np.dot(x, mfcc_filterBank[n]))
+        mfc_tmp = np.dot(x, mfcc_filterBank[n])
+        if mfc_tmp > 0:
+            mfc[n] = 20 * np.log10(mfc_tmp)
+        else:
+            mfc[n] = -120
+
     return list(mfc)
 
 
@@ -109,11 +122,11 @@ def parametrization(x, last_param, last_delta):
     global mfcc_filterBank
     global mfcc_len
 
-    x_normalized = [el / max(x) for el in x]  # normalizacja sygnału
+    x_normalized = [el / max(abs(x)) for el in x]  # normalizacja sygnału
 
     x_windowed = hamming_window(x_normalized)  # okienkowanie (Hamming)
 
-    spectrum = dft(x_windowed)  # rzeczywista część widma mocy TODO: FFT
+    spectrum = fft(x_windowed)  # rzeczywista część widma mocy TODO: FFT
 
     if mfcc_len != len(spectrum):  # sprawdzanie dostępności banku filtrów
         mfcc_filterBank = make_filterBank(len(spectrum), 40)
@@ -140,38 +153,3 @@ def parametrization(x, last_param, last_delta):
     final_param.extend(delta2)
 
     return final_param
-
-
-# test na przykładowym sygnale
-frame_len = 200
-overlap_len = 40
-
-fs, signal = wavfile.read('./test_audio.wav')
-signal_float = signal / np.iinfo(np.int16).max
-signal = preemphasis(signal, 0.95)  # filtr preemfazy
-start = 0
-
-n_frames = int(np.floor(fs / (frame_len - overlap_len))) - 2
-frames = np.zeros((n_frames, frame_len))
-
-for idx1 in range(n_frames):
-    frames[idx1, :] = signal[start:start + frame_len]
-    start += (frame_len - overlap_len)
-
-l_p = np.zeros(13)
-l_d = np.zeros(13)
-
-param = np.zeros((n_frames, 39))
-for idx1 in range(n_frames):
-    param[idx1] = parametrization(frames[idx1, :], l_p, l_d)
-    l_p = param[idx1, 0:13]
-    l_d = param[idx1, 14:27]
-    print(idx1)
-
-fig, axs = plt.subplots(2)
-
-fig.suptitle('Vertically stacked subplots')
-axs[0].plot(signal_float)
-axs[1] = plt.imshow(np.transpose(param), origin='lowest', aspect='auto')
-plt.colorbar(orientation='horizontal')
-plt.show()
