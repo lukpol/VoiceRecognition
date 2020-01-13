@@ -37,13 +37,10 @@ def frames_parametrization(x, n_coeff: int):
     return out_coeffs
 
 
-def vad():  # TODO
-    if ValueError:
-        return False
-    else:
-        return True
-
-
+def vad(frames): 
+    energy = np.mean(np.abs(frames))
+    return frames[np.mean(np.abs(frames),1) >= energy,:]
+                     
 class WordModel:
     name: str
     mixture: GaussianMixture
@@ -75,6 +72,7 @@ class WordModel:
             if fs != 8000:
                 signal = resampling(signal, fs, 8000)
             frames = framing(signal, 200, 40)
+            frames = vad(frames)
             coeffs = frames_parametrization(frames, 13)
             self.mixture.fit(coeffs)
         print("GMM model of \"" + self.name + "\" DONE")
