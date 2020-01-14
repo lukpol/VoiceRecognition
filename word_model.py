@@ -39,22 +39,27 @@ def frames_parametrization(x, n_coeff: int):
 
 def vad(frames): 
     energy = np.mean(np.abs(frames))
-    return frames[np.mean(np.abs(frames),1) >= energy,:]
+    return frames[np.mean(np.abs(frames), 1) >= 0.9*energy,:]
           
+    
+def vad_rt(frame, thr = 25):
+    if 20*np.log10(np.std(frame)) > thr:
+        return 1 
+    return 0
         
 def Gaussian(coeffs):
-    return np.array((np.mean(coeffs,axis=0),np.std(coeffs,axis=0)))
+    return np.array((np.mean(coeffs, axis = 0), np.std(coeffs, axis = 0)))
 
 
 class WordModel:
     name: str
-    mixture: GaussianMixture
     # jakaś struktura modelu
 
     def __init__(self, name: str):
         self.name = name
 
     def save(self, path: str):
+        np.save()
         return ValueError
 
     def load(self, path: str):
