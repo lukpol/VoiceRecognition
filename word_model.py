@@ -6,7 +6,7 @@ from sklearn.mixture import GaussianMixture
 
 
 def resampling(x, fs_old: int, fs_new: int):
-    x_len = len(x)
+    x_len = len(x)c
     out_len = int(np.floor(x_len * fs_new / fs_old))
     out = sig.resample(x, out_len)
     return out
@@ -40,7 +40,12 @@ def frames_parametrization(x, n_coeff: int):
 def vad(frames): 
     energy = np.mean(np.abs(frames))
     return frames[np.mean(np.abs(frames),1) >= energy,:]
-                     
+          
+        
+def Gaussian(coeffs):
+    return np.array((np.mean(coeffs,axis=0),np.std(coeffs,axis=0)))
+
+
 class WordModel:
     name: str
     mixture: GaussianMixture
@@ -64,7 +69,7 @@ class WordModel:
         # 5) Parametryzacja (26 elementów -> 13 elementów (energia+12MFCC) + delta
         # 6) Stworzenie modelu GMM
 
-        self.mixture = GaussianMixture(n_components=13)
+        coeffs = np.zeros((0,39))
         for k in range(1, 7):
             fs, signal = wavfile.read(path + self.name + "_" + str(k) + ".wav")
             signal = signal[:, 0]
@@ -73,8 +78,8 @@ class WordModel:
                 signal = resampling(signal, fs, 8000)
             frames = framing(signal, 200, 40)
             frames = vad(frames)
-            coeffs = frames_parametrization(frames, 13)
-            self.mixture.fit(coeffs)
+            coeffs = np.append(coeffs, frames_parametrization(frames, 13), axis = 0)
+        model = Gaussian(coeffs)
         print("GMM model of \"" + self.name + "\" DONE")
 
 
