@@ -68,11 +68,7 @@ def dct(x: list) -> list:
 
 
 def energy(x: list):
-    sum_tmp = sum([pow(el, 2) for el in x])
-    if sum_tmp > 0:
-        out = 20 * np.log10(sum_tmp) / len(x)
-    else:
-        out = -120 / len(x)
+    out = sum([pow(el, 2) for el in x]) / len(x)
     return out
 
 
@@ -118,7 +114,7 @@ def delta(x: list, y: list) -> list:
     return list(out)
 
 
-def parametrization(x, last_param, last_delta):
+def parametrization(x):
     global mfcc_filterBank
     global mfcc_len
 
@@ -136,20 +132,16 @@ def parametrization(x, last_param, last_delta):
 
     MFCC = dct(MFC)  # dekorelacja DCT
 
-    final_param = MFCC[1:13]  # skrócenie do do 12 współczynników
+    final_param = MFCC[1:13]  # skrócenie MFCC do do 12 współczynników
 
-    n = np.arange(12)
+    n = np.arange(12)  # liftering
     cep_lifter = 23
     lift = 1 + (cep_lifter / 2) * np.sin(np.pi * n / cep_lifter)
     final_param *= lift
+
+    final_param = [el / max(np.absolute(final_param)) for el in final_param]  # normalizacja MFCC
     final_param = list(final_param)
-
-    final_param.insert(0, energy(x))  # dodanie energii na początek
-
-    delta1 = delta(final_param, last_param)  # dodanie pierwszej pochodnej
-    final_param.extend(delta1)
-
-    delta2 = delta(delta1, last_delta)  # dodanie drugiej pochodnej
-    final_param.extend(delta2)
+    energy_tmp = energy(x_windowed)
+    final_param.insert(0, energy(x_windowed))  # dodanie energii na początek
 
     return final_param

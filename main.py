@@ -8,7 +8,7 @@ from parameterization import parametrization
 frame_len = 200
 overlap_len = 40
 
-fs, signal = wavfile.read('./Komendy/prawo/prawo_2.wav')
+fs, signal = wavfile.read('./Komendy/stop/stop_2.wav')
 signal = signal[:, 0]
 signal_float = signal / np.iinfo(np.int16).max
 signal_len = len(signal)
@@ -22,14 +22,9 @@ for idx1 in range(n_frames):
     frames[idx1, :] = signal[start:start + frame_len]
     start += (frame_len - overlap_len)
 
-l_p = np.zeros(13)
-l_d = np.zeros(13)
-
-param = np.zeros((n_frames, 39))
+param = np.zeros((n_frames, 13))
 for idx1 in range(n_frames):
-    param[idx1] = parametrization(frames[idx1, :], l_p, l_d)
-    l_p = param[idx1, 0:13]
-    l_d = param[idx1, 14:27]
+    param[idx1] = parametrization(frames[idx1, :])
     print(idx1)
 
 fig, axs = plt.subplots(2)
