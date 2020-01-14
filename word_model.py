@@ -59,8 +59,7 @@ class WordModel:
         self.name = name
 
     def save(self, path: str):
-        np.save()
-        return ValueError
+        np.save(path + 'model_name.npy', self.model)
 
     def load(self, path: str):
         return ValueError
@@ -84,7 +83,7 @@ class WordModel:
             frames = framing(signal, 200, 40)
             frames = vad(frames)
             coeffs = np.append(coeffs, frames_parametrization(frames, 13), axis = 0)
-        model = Gaussian(coeffs)
+        self.model = Gaussian(coeffs)
         print("GMM model of \"" + self.name + "\" DONE")
 
 
