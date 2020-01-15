@@ -4,6 +4,7 @@ from scipy import signal as sig
 from scipy.io import wavfile
 from sklearn.mixture import GaussianMixture
 import pickle
+import tqdm
 
 def resampling(x, fs_old: int, fs_new: int):
     x_len = len(x)
@@ -44,6 +45,41 @@ def vad_rt(frame, thr = 25):
         return 1 
     return 0
         
+def crossvalidation(path, number, out_of, komendy):
+    count = 0
+    tested = 0
+    # pętla po "chunkach"
+    for i in range(1,int(out_of/number)+1):
+        print(i)
+        idx = np.ones((out_of))
+        idx[i*number:(i+1)*number] = 0
+        # Tworzenie modelu
+        for name in komendy:
+            gmm = WordModel(name)
+            coeffs = np.zeros((0,13))
+            for ind, k in enumerate(idx):
+                if k == 1:
+                    fs, signal = wavfile.read(path + name + '/' + name + '_' + str(ind+1) + ".wav")
+                    signal = signal[:, 0]
+                    signal = param.preemphasis(signal, 0.95)
+                    if fs != 8000:
+                        signal = resampling(signal, fs, 8000)
+                    frames = framing(signal, 200, 40)
+                    frames = vad(frames)
+                    coeffs = np.append(coeffs, frames_parametrization(frames, 13), axis = 0)
+            gmm.model = {gmm.name: gmm.gaussian(coeffs)}
+            gmm.save(path='Models/')
+        # Evaluacja
+        for name in komendy:
+            for ind, k in enumerate(idx):
+                if k == 0:
+                    tested += 1
+                    found = gmm.discriminate(path + name + '/' + name + '_' + str(ind+1) + '.wav')
+                    if found == name:
+                        count += 1  
+             
+    return count/tested*100
+
 
 class WordModel:
     name: str
@@ -98,9 +134,9 @@ class WordModel:
                                              (params[0,:]**2 / models[name][0,:]**2)) )
             
             
-        print('znaleziono', self.komendy[np.argmin(dist)])
+#         print('znaleziono', self.komendy[np.argmin(dist)])
         return self.komendy[np.argmin(dist)]
-    
+        
     def train(self, path: str):
         # trzeba zrobić jakiś model danego słowa (nie wiem, HMM, za bardzo nie pamiętam jak to się robiło)
         # 1) Wczytanie wszystkich sygnałów danego słowa
